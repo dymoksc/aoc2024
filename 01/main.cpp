@@ -20,6 +20,7 @@ int main() {
     ranges::sort(list1);
     ranges::sort(list2);
 
+    // Part 1
     int total_distance = transform_reduce(list1.begin(), list1.end(),
                                           list2.begin(), 0, plus<>{},
                                           [](int n1, int n2) {
@@ -28,6 +29,7 @@ int main() {
 
     cout << "Total distance: " << total_distance << endl;
 
+    // Part 2
     size_t sim_score = 0;
 
     auto it1 = list1.begin();
@@ -41,7 +43,7 @@ int main() {
         return ranges::distance(begin, it1);
     };
 
-    while (true) {
+    while (it1 != list1.end() && it2 != list2.end()) {
         // Fast-forwarding until one of lists is depleted or members are the same
         while (it1 != list1.end() && it2 != list2.end() && *it1 != *it2) {
             if (*it1 < *it2) it1 = find_if(it1, list1.end(), [&](int n1) { return n1 >= *it2; });
@@ -52,8 +54,6 @@ int main() {
         int number = *it1;
         sim_score += number * get_reps(it1, list1.end()) *
                      get_reps(it2, list2.end());
-
-        if (it1 == list1.end() || it2 == list2.end()) break;
     }
 
     cout << "Similarity score: " << sim_score << endl;

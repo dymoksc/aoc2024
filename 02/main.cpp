@@ -5,6 +5,7 @@
 #include <string>
 #include <ranges>
 #include <vector>
+#include <range/v3/all.hpp>
 
 using namespace std;
 
@@ -16,12 +17,17 @@ enum class ReportDirection {
 
 typedef vector<int> report_t;
 
-bool is_safe(const report_t & report) {
+bool is_safe(auto report) {
     ReportDirection direction = ReportDirection::Unknown;
-    auto it = ranges::adjacent_find(report, [&](int n1, int n2) {
-        if (abs(n1 - n2) < 1 || abs(n1 - n2) > 3 ||
-            n1 > n2 && direction == ReportDirection::Increase ||
-            n1 < n2 && direction == ReportDirection::Decrease) {
+
+    auto it = std::ranges::adjacent_find(report, [&](int n1, int n2) {
+        auto is_unsafe_pair = [](int a, int b, const ReportDirection dir) {
+            return abs(a - b) < 1 || abs(a - b) > 3 ||
+                a > b && dir == ReportDirection::Increase ||
+                a < b && dir == ReportDirection::Decrease;
+        };
+
+        if (is_unsafe_pair(n1, n2, direction)) {
             return true;
         }
 
@@ -44,15 +50,35 @@ int main() {
         stringstream ss(line);
         reports.emplace_back((istream_iterator<int>(ss)), istream_iterator<int>());
     }
+    
+    auto [safe_reports_no_skip, safe_reports_skip] = accumulate(
+            reports.begin(), reports.end(), make_pair(0, 0),
+            [](auto sum, const report_t &r) {
+                for (int n : r) cout << n << " ";
+                // Output boolalpha to print bool values as "true" or "false"
+                const bool is_safe_no_skip = is_safe(r);
+                cout << boolalpha << is_safe_no_skip << "\t";
 
-    int safe_reports = accumulate(reports.begin(), reports.end(), 0,
-                                  [](int sum, const report_t &r) {
-                                      return sum + is_safe(r);
-                                  });
+                bool is_safe_w_skip = false;
+                if (!is_safe_no_skip) {
+                    for (int i = 0; i < r.size(); i++) {
+                        is_safe_w_skip = is_safe(::ranges::views::concat(
+                                r | ::ranges::views::take(i),
+                                r | ::ranges::views::drop(i + 1)));
 
-    cout << "Safe reports: " << safe_reports << endl;
+                        if (is_safe_w_skip) {
+                            break;
+                        }
+                    }
+                }
 
-    // 624
+                cout << endl;
+
+                return make_pair(sum.first + is_safe_no_skip, sum.second + (is_safe_w_skip || is_safe_no_skip));
+            });
+
+    cout << "Safe reports no skips: " << safe_reports_no_skip << endl;
+    cout << "Safe reports skips: " << safe_reports_skip << endl;
 
     return 0;
 }

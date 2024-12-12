@@ -6,19 +6,30 @@
 using namespace std;
 
 int main() {
-    unordered_map<string, function<int(const string&, const string&)>> ops = {
-        {"mul", [](const string& a, const string& b) { return stoi(a) * stoi(b); }},
-    };
-
     // Make a regex
-    regex r(R"(mul\((\d{1,3}),(\d{1,3})\))");
+    const regex r(R"((don't|do|mul\((\d{1,3}),(\d{1,3})\)))");
 
     int sum = 0;
     string str;
+    bool enabled = true;
     while (getline(cin, str)) {
         sum = accumulate(sregex_iterator(str.begin(), str.end(), r), sregex_iterator(), sum,
-                         [&](int acc, const smatch& m) {
-                             return acc + ops["mul"](m[1], m[2]);
+                         [&enabled](int acc, const smatch& m) {
+                             if (m[0] == "don't") {
+                                 enabled = false;
+                                 return acc;
+                             }
+
+                             if (m[0] == "do") {
+                                 enabled = true;
+                                 return acc;
+                             }
+
+                             if (!enabled) {
+                                 return acc;
+                             }
+
+                             return acc + stoi(m[2]) * stoi(m[3]);
                          });
     }
 

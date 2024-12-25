@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <iostream>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -61,8 +62,9 @@ int main() {
 
     assert(!field.empty());
     vector matched(field.size(), vector(field[0].size(), false));
+    vector matched2(field.size(), vector(field[0].size(), false));
 
-    const string pattern = "XMAS";
+    const string pattern = "MAS";
 
     auto build_matchers = [&pattern]() {
         vector<unique_ptr<pattern_matcher_t>> matchers;
@@ -101,17 +103,17 @@ int main() {
             auto value_to_match = field[i][j];
             cdebug1 << "Matching " << value_to_match << endl;
 
-            do_match(line_matchers, value_to_match, [&matched, &pattern, i, j] {
-                for (size_t k = j - pattern.size() + 1; k <= j; ++k) {
-                    matched[i][k] = true;
-                }
-            });
-
-            do_match(column_matchers[j], value_to_match, [&matched, &pattern, i, j] {
-                for (size_t k = i - pattern.size() + 1; k <= i; ++k) {
-                    matched[k][j] = true;
-                }
-            });
+            // do_match(line_matchers, value_to_match, [&matched, &pattern, i, j] {
+            //     for (size_t k = j - pattern.size() + 1; k <= j; ++k) {
+            //         matched[i][k] = true;
+            //     }
+            // });
+            //
+            // do_match(column_matchers[j], value_to_match, [&matched, &pattern, i, j] {
+            //     for (size_t k = i - pattern.size() + 1; k <= i; ++k) {
+            //         matched[k][j] = true;
+            //     }
+            // });
 
         }
     }
@@ -140,18 +142,15 @@ int main() {
         matchers = build_matchers();
     }
 
+    size_t matched_diagonals = 0;
+
     for (int x_mod = 0; x_mod < min_size - pattern.size() + 1; ++x_mod) {
         for (size_t i = x_mod, j = 0; i < min_size && j < min_size; ++i, ++j) {
             do_match(direct_matchers1[x_mod], field[i][j], [&matched, &pattern, i, j] {
+                matched[i - pattern.size() / 2][j - pattern.size() / 2] = true;
+
                 for (int k = 0; k > -static_cast<int>(pattern.size()); --k) {
                     matched[i + k][j + k] = true;
-                }
-            });
-        }
-        for (int i = min_size - x_mod - 1, j = 0; i >= 0 && j < min_size; --i, ++j) {
-            do_match(reverse_matchers1[x_mod], field[i][j], [&matched, &pattern, i, j] {
-                for (int k = 0; k > -static_cast<int>(pattern.size()); --k) {
-                    matched[i - k][j + k] = true;
                 }
             });
         }
@@ -160,13 +159,40 @@ int main() {
         }
         for (size_t i = 0, j = x_mod; i < min_size && j < min_size; ++i, ++j) {
             do_match(direct_matchers2[x_mod], field[i][j], [&matched, &pattern, i, j] {
+                matched[i - pattern.size() / 2][j - pattern.size() / 2] = true;
+
                 for (int k = 0; k > -static_cast<int>(pattern.size()); --k) {
                     matched[i + k][j + k] = true;
                 }
             });
         }
+    }
+
+    for (int x_mod = 0; x_mod < min_size - pattern.size() + 1; ++x_mod) {
+        for (int i = min_size - x_mod - 1, j = 0; i >= 0 && j < min_size; --i, ++j) {
+            do_match(reverse_matchers1[x_mod], field[i][j], [&matched, &matched2, &pattern, i, j, &matched_diagonals] {
+                if (matched[i + pattern.size() / 2][j - pattern.size() / 2]) {
+                    matched_diagonals += true;
+                    matched2[i + pattern.size() / 2][j - pattern.size() / 2] = true;
+                }
+
+                matched[i + pattern.size() / 2][j - pattern.size() / 2] = true;
+
+                for (int k = 0; k > -static_cast<int>(pattern.size()); --k) {
+                    matched[i - k][j + k] = true;
+                }
+            });
+        }
+        if (x_mod == 0) {
+            continue;
+        }
         for (int i = min_size - 1, j = x_mod; i >= 0 && j < min_size; --i, ++j) {
-            do_match(reverse_matchers2[x_mod], field[i][j], [&matched, &pattern, i, j] {
+            do_match(reverse_matchers2[x_mod], field[i][j], [&matched, &matched2, &pattern, i, j, &matched_diagonals] {
+                if (matched[i + pattern.size() / 2][j - pattern.size() / 2]) {
+                    matched_diagonals += true;
+                    matched2[i + pattern.size() / 2][j - pattern.size() / 2] = true;
+                }
+
                 for (int k = 0; k > -static_cast<int>(pattern.size()); --k) {
                     matched[i - k][j + k] = true;
                 }
@@ -174,18 +200,19 @@ int main() {
         }
     }
 
-    for (size_t i = 0; i < field.size(); ++i) {
-        for (size_t j = 0; j < field[i].size(); ++j) {
-            if (!matched[i][j]) {
-                cout << ".";
-                continue;
-            }
-            cout << field[i][j];
-        }
-        cout << endl;
-    }
+    // for (size_t i = 0; i < field.size(); ++i) {
+    //     for (size_t j = 0; j < field[i].size(); ++j) {
+    //         if (!matched2[i][j]) {
+    //             cdebug2 << ".";
+    //             continue;
+    //         }
+    //         cdebug2 << field[i][j];
+    //     }
+    //     cdebug2 << endl;
+    // }
 
-    cout << matches << endl;
+    cout << "Pattern matches: " << matches << endl;
+    cout << "Diagonal matches: " << matched_diagonals << endl;
 
     return 0;
 }

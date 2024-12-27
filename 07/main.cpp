@@ -32,7 +32,11 @@ vector<problem_t> read_problems(istream & is) {
     return problems;
 }
 
-const vector<function<int_t(int_t, int_t)>> ops = {plus<>(), multiplies<>()};
+int_t concatenates(int_t a, int_t b) {
+    return stoit(to_string(a) + to_string(b));
+}
+
+const vector<function<int_t(int_t, int_t)>> ops = {plus<>(), multiplies<>(), concatenates};
 
 bool solve(auto numbers, int_t result_so_far, int_t required_result) {
     if (rr::distance(numbers) == 0) {

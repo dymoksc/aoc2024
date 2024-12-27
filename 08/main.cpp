@@ -49,21 +49,23 @@ int main() {
     for (const auto& [c, coords] : coord_by_freq) {
         for (int i = 0; i < coords.size(); ++i) {
             for (int j = i + 1; j < coords.size(); ++j) {
-                auto distance = coords[i] - coords[j];
-                coord node1 = coords[i] + distance;
-                coord node2 = coords[j] - distance;
+                auto vect = coords[i] - coords[j];
+                auto anti_vect = coord{-vect.first, -vect.second};
 
-                if (node1.first >= 0 && node1.first < y && node1.second >= 0 && node1.second < x) {
-                    valid_antinodes.insert(node1);
-                }
-                if (node2.first >= 0 && node2.first < y && node2.second >= 0 && node2.second < x) {
-                    valid_antinodes.insert(node2);
+                for (auto init_coord : {coords[i], coords[j]}) {
+                    for (auto v : {vect, anti_vect}) {
+                        coord node = init_coord + v;
+                        while (node.first >= 0 && node.first < y && node.second >= 0 && node.second < x) {
+                            valid_antinodes.insert(node);
+                            node = node + v;
+                        }
+                    }
                 }
             }
         }
     }
 
-    cout << "Valid antinodes:" << valid_antinodes.size() << endl;
+    cout << "Valid antinodes: " << valid_antinodes.size() << endl;
 
     return 0;
 }
